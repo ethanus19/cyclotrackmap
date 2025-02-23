@@ -1,219 +1,174 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Itinéraire Vélo - Version Finale</title>
+    <title>Itinéraire Adaptatif</title>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            display: flex;
-            flex-direction: column;
-        }
-
-        #map {
-            width: 100%;
-            height: 100vh;
-        }
-
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Arial', sans-serif; }
+        #map { width: 100%; height: 100vh; }
         #controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: #ffffff;
-            padding: 10px;
-            border-radius: 10px 10px 0 0;
-            box-shadow: 0px -4px 10px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 320px;
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
+            display: flex; flex-direction: column; align-items: center;
+            background: white; padding: 15px; border-radius: 15px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            width: 90%; max-width: 320px; position: absolute; bottom: 10px;
+            left: 50%; transform: translateX(-50%); z-index: 1000;
         }
-
-        .input-container {
-            display: flex;
-            width: 100%;
-            align-items: center;
-            gap: 10px;
+        .input-container { display: flex; width: 100%; align-items: center; gap: 10px; margin-bottom: 10px; }
+        input { flex: 1; padding: 10px; font-size: 14px; border: 2px solid #ddd; border-radius: 20px; }
+        .round-btn, .recenter-btn { padding: 10px; border: none; border-radius: 20px; cursor: pointer; background-color: #4285F4; color: white; }
+        #info {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 10px;
+            z-index: 1000; text-align: center; font-size: 14px;
+            display: flex; justify-content: space-between; width: 90%; max-width: 320px;
         }
-
-        input {
-            flex: 1;
-            padding: 10px;
-            font-size: 14px;
-            border: 2px solid #ddd;
-            border-radius: 20px;
-            outline: none;
-            box-sizing: border-box;
-        }
-
-        .round-btn {
-            width: 40px;
-            height: 40px;
-            background-color: #4285F4;
-            color: white;
-            border: none;
-            font-size: 18px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .checkbox-container {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 10px;
-            background: white;
-            border-radius: 10px;
-            width: 100%;
-        }
-
-        .checkbox-container label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-        }
-
-        .checkbox-container input {
-            transform: scale(1.2);
-        }
-
-        .recenter-bar {
-            width: 100%;
-            padding: 12px;
-            font-size: 14px;
-            border: none;
-            border-radius: 20px;
-            text-align: center;
-            cursor: pointer;
-            background-color: #4285F4;
-            color: white;
-            box-sizing: border-box;
-        }
-
-        #output {
-            text-align: center;
-            font-size: 14px;
-            font-weight: bold;
-            color: #333;
-            margin-top: 5px;
-        }
+        #recenterBtn { margin-top: 10px; }
     </style>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCR7SCqenD28DPjCI0ZIQZgR-nxvPE24u8&libraries=places&callback=initMap" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCR7SCqenD28DPjCI0ZIQZgR-nxvPE24u8&libraries=places,directions,elevation,geometry&callback=initMap" async defer></script>
 </head>
 <body>
-
     <div id="map"></div>
-
     <div id="controls">
         <div class="input-container">
-            <input id="start" type="text" placeholder="Point de départ" />
+            <input id="start" type="text" placeholder="Point de départ">
             <button id="useLocation" class="round-btn">📍</button>
         </div>
         <div class="input-container">
-            <input id="end" type="text" placeholder="Destination" />
-            <button id="submit" class="round-btn">🚴‍♂️</button>
+            <input id="end" type="text" placeholder="Destination">
+            <button id="calculate" class="round-btn">🚀</button>
         </div>
 
-        <div class="checkbox-container">
-            <label><input type="checkbox" id="route"> 🛣️ <span>Route uniquement</span></label>
-            <label><input type="checkbox" id="chemin"> 🏞️ <span>Chemin uniquement</span></label>
-            <label><input type="checkbox" id="mixte" checked> 🔄 <span>Mixte (route + chemin)</span></label>
-            <label><input type="checkbox" id="pistesCyclables"> 🚲 <span>Prioriser les pistes cyclables</span></label>
-        </div>
+        <button id="recenterBtn" class="recenter-btn">🔄 Recentrer sur moi</button>
+    </div>
 
-        <button id="recenterBtn" class="recenter-bar">🔄 Recentrer sur ma position</button>
-        <div id="output"></div>
+    <div id="info">
+        <div>
+            Distance totale: <span id="totalDistance">--</span><br>
+            Temps total: <span id="totalDuration">--</span>
+        </div>
+        <div>
+            Distance restante: <span id="distance">--</span><br>
+            Temps restant: <span id="duration">--</span><br>
+            Dénivelé total: <span id="elevation">--</span>
+        </div>
     </div>
 
     <script>
-        var map, directionsService, directionsRenderer;
-        var userPosition = null;
+        let map, directionsService, directionsRenderer, elevationService, userPosition = null, userMarker;
+        let startAutocomplete, endAutocomplete, currentRoute, remainingPath = [];
+        let followUser = false;
 
         function initMap() {
-            directionsService = new google.maps.DirectionsService();
-            directionsRenderer = new google.maps.DirectionsRenderer();
-
             map = new google.maps.Map(document.getElementById("map"), {
                 center: { lat: 48.8566, lng: 2.3522 },
-                zoom: 14,
-                mapTypeId: "terrain",
-                streetViewControl: false,
-                mapTypeControl: false,
-                panControl: false,
-                fullscreenControl: false
+                zoom: 12,
+                mapTypeId: "roadmap",
+                disableDefaultUI: true 
             });
 
-            directionsRenderer.setMap(map);
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
+            elevationService = new google.maps.ElevationService();
 
-            // Demander la géolocalisation de l'utilisateur
+            startAutocomplete = new google.maps.places.Autocomplete(document.getElementById("start"));
+            endAutocomplete = new google.maps.places.Autocomplete(document.getElementById("end"));
+
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    userPosition = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    map.setCenter(userPosition); // Centrer la carte sur la position de l'utilisateur
-                }, function() {
-                    alert("Impossible de récupérer votre position.");
+                navigator.geolocation.watchPosition(position => {
+                    userPosition = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+
+                    if (!userMarker) {
+                        userMarker = new google.maps.Marker({
+                            position: userPosition, map: map, title: "Votre position"
+                        });
+                    } else {
+                        userMarker.setPosition(userPosition);
+                    }
+
+                    if (followUser) {
+                        map.setCenter(userPosition);
+                    }
+
+                    updateRemainingPath();
                 });
             }
         }
 
-        document.getElementById("submit").addEventListener("click", function() {
-            var start = document.getElementById("start").value;
-            var end = document.getElementById("end").value;
-            var selectedMode = document.getElementById("route").checked ? "BICYCLING" : "WALKING";
-            
-            directionsService.route({
+        document.getElementById("useLocation").addEventListener("click", function () {
+            if (userPosition) {
+                document.getElementById("start").value = `${userPosition.lat()}, ${userPosition.lng()}`;
+            } else {
+                alert("Position non disponible.");
+            }
+        });
+
+        document.getElementById("recenterBtn").addEventListener("click", function () {
+            if (userPosition) {
+                map.setCenter(userPosition);
+                followUser = true;
+                map.setZoom(15);
+            } else {
+                alert("Impossible de récupérer votre position.");
+            }
+        });
+
+        document.getElementById("calculate").addEventListener("click", function () {
+            let start = document.getElementById("start").value;
+            let end = document.getElementById("end").value;
+
+            if (!start || !end) {
+                alert("Veuillez entrer un point de départ et une destination.");
+                return;
+            }
+
+            let request = {
                 origin: start,
                 destination: end,
-                travelMode: selectedMode
-            }, function(response, status) {
-                if (status === "OK") {
-                    directionsRenderer.setDirections(response);
-                    var leg = response.routes[0].legs[0];
-                    document.getElementById("output").innerHTML = `📏 Distance : ${leg.distance.text} | ⏳ Durée : ${leg.duration.text}`;
+                travelMode: google.maps.TravelMode.BICYCLING
+            };
+
+            directionsService.route(request, function (result, status) {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    directionsRenderer.setDirections(result);
+                    currentRoute = result.routes[0].legs[0];
+                    remainingPath = currentRoute.steps.map(step => step.end_location);
+
+                    // Mise à jour de la distance et du temps total
+                    document.getElementById("totalDistance").innerText = (currentRoute.distance.value / 1000).toFixed(2) + " km";
+                    document.getElementById("totalDuration").innerText = Math.round(currentRoute.duration.value / 60) + " min";
+
+                    updateRemainingPath();
+                    updateElevation(currentRoute);
+                } else {
+                    alert("Erreur de calcul d'itinéraire : " + status);
                 }
             });
         });
 
-        document.getElementById("recenterBtn").addEventListener("click", function() {
-            if (userPosition) {
-                map.setCenter(userPosition);
-            }
-        });
+        function updateRemainingPath() {
+            if (!userPosition || !remainingPath.length) return;
 
-        // Ajouter le gestionnaire pour le bouton de géolocalisation
-        document.getElementById("useLocation").addEventListener("click", function() {
-            if (userPosition) {
-                document.getElementById("start").value = "Ma position";
-                directionsService.route({
-                    origin: userPosition,
-                    destination: document.getElementById("end").value,
-                    travelMode: document.getElementById("route").checked ? "BICYCLING" : "WALKING"
-                }, function(response, status) {
-                    if (status === "OK") {
-                        directionsRenderer.setDirections(response);
-                        var leg = response.routes[0].legs[0];
-                        document.getElementById("output").innerHTML = `📏 Distance : ${leg.distance.text} | ⏳ Durée : ${leg.duration.text}`;
-                    }
-                });
-            } else {
-                alert("Impossible d'obtenir votre position.");
+            let distanceRemaining = 0;
+            for (let i = 0; i < remainingPath.length - 1; i++) {
+                distanceRemaining += google.maps.geometry.spherical.computeDistanceBetween(remainingPath[i], remainingPath[i + 1]);
             }
-        });
+
+            document.getElementById("distance").innerText = (distanceRemaining / 1000).toFixed(2) + " km";
+            let vitesseMoyenne = currentRoute.duration.value / (currentRoute.distance.value || 1);
+            document.getElementById("duration").innerText = Math.round((distanceRemaining / vitesseMoyenne) / 60) + " min";
+        }
+
+        function updateElevation(route) {
+            let path = route.steps.map(step => step.start_location);
+            elevationService.getElevationAlongPath({ path: path, samples: path.length }, function (results, status) {
+                if (status === 'OK') {
+                    let elevationGain = results.reduce((acc, point, index, arr) =>
+                        index > 0 ? acc + Math.max(0, point.elevation - arr[index - 1].elevation) : acc, 0);
+                    document.getElementById("elevation").innerText = Math.round(elevationGain) + " m";
+                }
+            });
+        }
     </script>
 </body>
 </html>
