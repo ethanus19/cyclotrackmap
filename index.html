@@ -9,7 +9,7 @@
         #map { width: 100%; height: 100vh; }
         #controls {
             display: flex; flex-direction: column; align-items: center;
-            background: white; padding: 15px; border-radius: 15px;
+            background: white; padding: 10px; border-radius: 15px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
             width: 90%; max-width: 320px; position: absolute; bottom: 10px;
             left: 50%; transform: translateX(-50%); z-index: 1000;
@@ -18,12 +18,14 @@
         input { flex: 1; padding: 10px; font-size: 14px; border: 2px solid #ddd; border-radius: 20px; }
         .round-btn, .recenter-btn { padding: 10px; border: none; border-radius: 20px; cursor: pointer; background-color: #4285F4; color: white; }
         #info {
-            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 10px;
-            z-index: 1000; text-align: center; font-size: 14px;
-            display: flex; justify-content: space-between; width: 90%; max-width: 320px;
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9); padding: 15px 25px; border-radius: 10px;
+            z-index: 1000; text-align: center; font-size: 14px; width: 100%; max-width: 320px;
+            display: flex; justify-content: space-between; flex-direction: row;
+            align-items: center; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
         }
         #recenterBtn { margin-top: 10px; }
+        .bike-icon { width: 30px; height: 30px; background-color: #4285F4; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; color: white; }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCR7SCqenD28DPjCI0ZIQZgR-nxvPE24u8&libraries=places,directions,elevation,geometry&callback=initMap" async defer></script>
 </head>
@@ -44,14 +46,13 @@
 
     <div id="info">
         <div>
-            Distance totale: <span id="totalDistance">--</span><br>
-            Temps total: <span id="totalDuration">--</span>
+            Distance: <span id="totalDistance">--</span><br>
+            Temps: <span id="totalDuration">--</span>
         </div>
         <div>
-            Distance restante: <span id="distance">--</span><br>
-            Temps restant: <span id="duration">--</span><br>
-            Dénivelé total: <span id="elevation">--</span>
+            Dénivelé: <span id="elevation">--</span>
         </div>
+        <div class="bike-icon" id="bikeMarker">🚴</div>
     </div>
 
     <script>
@@ -80,7 +81,7 @@
 
                     if (!userMarker) {
                         userMarker = new google.maps.Marker({
-                            position: userPosition, map: map, title: "Votre position"
+                            position: userPosition, map: map, title: "Votre position", icon: 'https://maps.google.com/mapfiles/kml/shapes/cycling.png'
                         });
                     } else {
                         userMarker.setPosition(userPosition);
@@ -154,7 +155,6 @@
                 distanceRemaining += google.maps.geometry.spherical.computeDistanceBetween(remainingPath[i], remainingPath[i + 1]);
             }
 
-            document.getElementById("distance").innerText = (distanceRemaining / 1000).toFixed(2) + " km";
             let vitesseMoyenne = currentRoute.duration.value / (currentRoute.distance.value || 1);
             document.getElementById("duration").innerText = Math.round((distanceRemaining / vitesseMoyenne) / 60) + " min";
         }
