@@ -23,9 +23,11 @@
             z-index: 1000; text-align: center; font-size: 14px; width: 100%; max-width: 320px;
             display: flex; justify-content: space-between; flex-direction: row;
             align-items: center; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            /* Height will be dynamically adjusted */
+            height: auto;
         }
         #recenterBtn { margin-top: 10px; }
-        .bike-icon { width: 30px; height: 30px; background-color: #4285F4; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; color: white; }
+        .bike-icon { width: 28px; height: 28px; background-color: #4285F4; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 16px; color: white; }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCR7SCqenD28DPjCI0ZIQZgR-nxvPE24u8&libraries=places,directions,elevation,geometry&callback=initMap" async defer></script>
 </head>
@@ -59,6 +61,17 @@
         let map, directionsService, directionsRenderer, elevationService, userPosition = null, userMarker;
         let startAutocomplete, endAutocomplete, currentRoute, remainingPath = [];
         let followUser = false;
+
+        // Fonction pour ajuster automatiquement la hauteur de la barre d'info
+        function adjustInfoBarHeight() {
+            const screenHeight = window.innerHeight;  // Taille de l'écran
+            const infoBarHeight = Math.min(screenHeight * 0.15, 100); // Limiter la hauteur à 15% de l'écran ou 100px
+            document.getElementById("info").style.height = infoBarHeight + "px";
+        }
+
+        // Appliquer le redimensionnement lors du chargement de la page ou lors de la redimension de la fenêtre
+        window.addEventListener("resize", adjustInfoBarHeight);
+        window.addEventListener("load", adjustInfoBarHeight);
 
         function initMap() {
             map = new google.maps.Map(document.getElementById("map"), {
