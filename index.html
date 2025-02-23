@@ -1,173 +1,179 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
-    <!-- Meta viewport pour une mise en page adaptée aux mobiles -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Itinéraire Vélo avec Géolocalisation en Direct</title>
+    <title>Itinéraire Vélo - Version Finale</title>
     <style>
-      /* Styles adaptés pour smartphone */
-      body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        font-family: Arial, sans-serif;
-      }
-      #controls {
-        padding: 10px;
-        background: #f0f0f0;
-      }
-      input, button {
-        padding: 10px;
-        margin: 5px 0;
-        font-size: 16px;
-        width: 100%;
-        box-sizing: border-box;
-      }
-      #output, #elevationOutput {
-        margin-top: 10px;
-        font-size: 16px;
-      }
-      #map {
-        width: 100%;
-        height: 60vh; /* 60% de la hauteur de la vue */
-      }
-    </style>
-    <!-- Charger l'API Google Maps avec la bibliothèque "places" -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCR7SCqenD28DPjCI0ZIQZgR-nxvPE24u8&libraries=places"></script>
-  </head>
-  <body>
-    <div id="controls">
-      <input id="start" type="text" placeholder="Point de départ" />
-      <input id="end" type="text" placeholder="Destination" />
-      <button id="submit">Calculer l'itinéraire</button>
-      <div id="output"></div>
-      <div id="elevationOutput"></div>
-    </div>
-    <div id="map"></div>
-    
-    <script>
-      var map, directionsService, directionsRenderer, elevator;
-      var userMarker = null; // Pour afficher la position de l'utilisateur
-
-      // Fonction d'initialisation de la carte
-      function initMap() {
-        // Initialiser les services Google Maps
-        directionsService = new google.maps.DirectionsService();
-        directionsRenderer = new google.maps.DirectionsRenderer();
-        elevator = new google.maps.ElevationService();
-
-        // Créer la carte centrée par défaut (Paris)
-        map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: 48.8566, lng: 2.3522 },
-          zoom: 14
-        });
-        directionsRenderer.setMap(map);
-
-        // Demander la géolocalisation et suivre la position en direct
-        if (navigator.geolocation) {
-          // Obtenir la position initiale
-          navigator.geolocation.getCurrentPosition(function(position) {
-            var userPos = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
-            // Centre la carte sur la position de l'utilisateur
-            map.setCenter(userPos);
-            // Créer le marqueur avec une icône de vélo s'il n'existe pas
-            if (!userMarker) {
-              userMarker = new google.maps.Marker({
-                position: userPos,
-                map: map,
-                title: "Votre position",
-                icon: {
-                  url: "https://maps.google.com/mapfiles/kml/shapes/cycling.png",
-                  scaledSize: new google.maps.Size(40, 40)
-                }
-              });
-            } else {
-              userMarker.setPosition(userPos);
-            }
-          }, function(error) {
-            console.error("Erreur lors de la géolocalisation initiale :", error);
-          }, { enableHighAccuracy: true });
-
-          // Suivre en direct la position de l'utilisateur
-          navigator.geolocation.watchPosition(function(position) {
-            var userPos = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
-            // Mettre à jour ou créer le marqueur
-            if (userMarker) {
-              userMarker.setPosition(userPos);
-            } else {
-              userMarker = new google.maps.Marker({
-                position: userPos,
-                map: map,
-                title: "Votre position",
-                icon: {
-                  url: "https://maps.google.com/mapfiles/kml/shapes/cycling.png",
-                  scaledSize: new google.maps.Size(40, 40)
-                }
-              });
-            }
-            // Centre la carte sur la nouvelle position
-            map.setCenter(userPos);
-          }, function(error) {
-            console.error("Erreur lors du suivi de géolocalisation :", error);
-          }, { enableHighAccuracy: true });
-        } else {
-          alert("La géolocalisation n'est pas supportée par votre navigateur.");
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
         }
 
-        // Associer le clic du bouton pour calculer l'itinéraire
-        document.getElementById("submit").addEventListener("click", calculateAndDisplayRoute);
-      }
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
 
-      // Fonction pour calculer et afficher l'itinéraire à vélo
-      function calculateAndDisplayRoute() {
-        var start = document.getElementById("start").value;
-        var end = document.getElementById("end").value;
+        #controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #ffffff;
+            padding: 10px;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0px -4px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 320px;
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
 
-        directionsService.route({
-          origin: start,
-          destination: end,
-          travelMode: "BICYCLING" // Mode vélo
-        }, function(response, status) {
-          if (status === "OK") {
-            directionsRenderer.setDirections(response);
-            var leg = response.routes[0].legs[0];
-            document.getElementById("output").innerHTML = "Distance: " + leg.distance.text + " - Durée: " + leg.duration.text;
+        .input-container {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            gap: 10px;
+        }
 
-            // Calculer le dénivelé cumulé (additionner uniquement les gains positifs)
-            var path = response.routes[0].overview_path;
-            var samples = 25;
-            elevator.getElevationAlongPath({
-              path: path,
-              samples: samples
-            }, function(results, status) {
-              if (status === "OK") {
-                var cumulativeGain = 0;
-                for (var i = 1; i < results.length; i++) {
-                  var diff = results[i].elevation - results[i - 1].elevation;
-                  if (diff > 0) {
-                    cumulativeGain += diff;
-                  }
-                }
-                document.getElementById("elevationOutput").innerHTML = "Dénivelé cumulé: " + Math.round(cumulativeGain) + " m";
-              } else {
-                document.getElementById("elevationOutput").innerHTML = "Erreur lors de la récupération de l'élévation: " + status;
-              }
+        input {
+            flex: 1;
+            padding: 10px;
+            font-size: 14px;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .round-btn {
+            width: 40px;
+            height: 40px;
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            font-size: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checkbox-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 10px;
+            background: white;
+            border-radius: 10px;
+            width: 100%;
+        }
+
+        .checkbox-container label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .checkbox-container input {
+            transform: scale(1.2);
+        }
+
+        .recenter-bar {
+            width: 100%;
+            padding: 12px;
+            font-size: 14px;
+            border: none;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            background-color: #4285F4;
+            color: white;
+            box-sizing: border-box;
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCR7SCqenD28DPjCI0ZIQZgR-nxvPE24u8&libraries=places&callback=initMap" async defer></script>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div id="controls">
+        <div class="input-container">
+            <input id="start" type="text" placeholder="Point de départ" />
+            <button id="useLocation" class="round-btn">📍</button>
+        </div>
+        <div class="input-container">
+            <input id="end" type="text" placeholder="Destination" />
+            <button id="submit" class="round-btn">🚴‍♂️</button>
+        </div>
+
+        <div class="checkbox-container">
+            <label><input type="checkbox" id="route"> 🛣️ <span>Route uniquement</span></label>
+            <label><input type="checkbox" id="chemin"> 🏞️ <span>Chemin uniquement</span></label>
+            <label><input type="checkbox" id="mixte" checked> 🔄 <span>Mixte (route + chemin)</span></label>
+            <label><input type="checkbox" id="pistesCyclables"> 🚲 <span>Prioriser les pistes cyclables</span></label>
+        </div>
+
+        <button id="recenterBtn" class="recenter-bar">🔄 Recentrer sur ma position</button>
+    </div>
+
+    <script>
+        var map, userPosition = null, userMarker;
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 48.8566, lng: 2.3522 },
+                zoom: 14,
+                mapTypeId: "terrain",
+                streetViewControl: false,
+                mapTypeControl: false,
+                panControl: false,
+                fullscreenControl: false
             });
-          } else {
-            alert("Erreur dans le calcul de l'itinéraire: " + status);
-          }
-        });
-      }
 
-      // Initialiser la carte au chargement de la page
-      window.onload = initMap;
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    userPosition = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    map.setCenter(userPosition);
+                    userMarker = new google.maps.Marker({
+                        position: userPosition,
+                        map: map,
+                        title: "Votre position"
+                    });
+                }, function() {
+                    alert("Impossible d'obtenir votre position.");
+                });
+            }
+        }
+
+        document.getElementById("useLocation").addEventListener("click", function() {
+            if (userPosition) {
+                document.getElementById("start").value = `${userPosition.lat}, ${userPosition.lng}`;
+            } else {
+                alert("Position non disponible.");
+            }
+        });
+
+        document.getElementById("recenterBtn").addEventListener("click", function() {
+            if (userPosition) {
+                map.setCenter(userPosition);
+            } else {
+                alert("Position non disponible.");
+            }
+        });
     </script>
-  </body>
+</body>
 </html>
